@@ -3,24 +3,36 @@ import Catch5
 import numpy as np
 
 ActionMap = {0: 3, 1: 2, 2: 1, 3: -1, 4: -2, 5: -3}
+
+
 class TrainStats():
     def __init__(self):
-        self.epoch  = 0
+        self.epoch = 0
         self.nb_wins = 0
         self.nb_losses = 0
         self.p_wins = 0
         self.p_loss = 0
 
 
-class Agent:
+class AgentConfig():
     def __init__(self):
+        self.nb_epoch = 10000
+        self.print_every_n_epoch = 1
+        self.plot_charts = True
+        self.discount_factor = 0.99
+        self.initial_randomness_rate = 1
+
+
+class Agent:
+    def __init__(self, config):
+        self.config = config
         self.game = Catch5.Game()
-        self.qtable ={}
-        self.randomness_rate =0.3
+        self.qtable = {}
+        self.randomness_rate = config.initial_randomness_rate
 
     def ensure_qtable_entry(self, state):
         if state not in self.qtable:
-            self.qtable[state] = np.zeros(6)  
+            self.qtable[state] = np.zeros(6)
 
     def get_action(self, state):
         if not self.should_go_random() and state in self.qtable:
@@ -52,39 +64,41 @@ class Agent:
             next_state_actions = self.qtable[next_state]
             next_state_max = np.amax(next_state_actions)
 
-            q_value = reward + 0.6 * next_state_max
+            q_value = reward + self.config.discount_factor * next_state_max
 
         self.qtable[state][action] = q_value
 
     def print_q_table(self):
         for key in sorted(self.qtable.keys()):
-            print(key,":" ,self.qtable[key])
+            print(key, ":", self.qtable[key])
         print()
 
     def print_epoch_stats(self, stats):
-        print('Epoch: {stats.epoch} Wins: {stats.nb_wins} ({stats.p_wins:.2f}%) Losses: {stats.nb_losses} ({stats.p_loss:.2f}%)'.format(stats=stats))
-        #self.print_q_table()
+        print('Epoch: {stats.epoch} Wins: {stats.nb_wins} ({stats.p_wins:.2f}%) Losses: {stats.nb_losses} ({stats.p_loss:.2f}%)'.format(
+            stats=stats))
+        # self.print_q_table()
 
     def play(self, num_times):
 
-      for nb_game in range(1, num_times + 1):
-        self.game.reset()
-        print('Starting game #{nb_game}'.format(nb_game=nb_game))
-        while (self.game.is_active()):
-            print('Current number is {current_number}'.format(current_number=self.game.current_number))
-            action = self.get_action(self.game.current_number)
-            human_readable_answer = self.action_to_answer(action)
-            
-            print('Playing {answer}'.format(answer=human_readable_answer))
-            self.game.play(human_readable_answer)
+        for nb_game in range(1, self.config.nb_epoch + 1):
+            self.game.reset()
+            print('Starting game #{nb_game}'.format(nb_game=nb_game))
+            while (self.game.is_active()):
+                print('Current number is {current_number}'.format(
+                    current_number=self.game.current_number))
+                action = self.get_action(self.game.current_number)
+                human_readable_answer = self.action_to_answer(action)
 
-            if (self.game.has_won()):
-                print('You won!')
+                print('Playing {answer}'.format(answer=human_readable_answer))
+                self.game.play(human_readable_answer)
 
-            if (self.game.has_lost()):
-                print('You lost')
+                if (self.game.has_won()):
+                    print('You won!')
 
-        print('##############################################')
+                if (self.game.has_lost()):
+                    print('You lost')
+
+            print('##############################################')
 
     def get_reward(self):
         if self.game.has_won():
@@ -97,7 +111,7 @@ class Agent:
     def play_and_train(self):
         stats = TrainStats()
 
-        for epoch in range(1, 101):
+        for epoch in range(1, self.config.nb_epoch + 1):
 
             self.game.reset()
             stats.epoch = epoch
@@ -125,8 +139,17 @@ class Agent:
                 stats.p_wins = 100 / epoch * stats.nb_wins
                 stats.p_loss = 100 / epoch * stats.nb_losses
 
-            if (epoch  % 10==0):
+            if (epoch % self.config.print_every_n_epoch == 0):
                 self.print_epoch_stats(stats)
 
 
-Agent().play_and_train()
+config = AgentConfig()
+config.nb_epoch = 100
+config.print_every_n_epoch = 10
+agent = Agent(config)
+agent.play_and_train()
+
+# play 1000 games on the trained agent
+config.nb_epoch = 1000
+agent.randomness_rate = 0
+agent.play_and_train()

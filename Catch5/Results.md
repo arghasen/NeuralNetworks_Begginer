@@ -15,3 +15,6 @@ Epoch: 90 Wins: 60 (66.67%) Losses: 30 (33.33%)
 Epoch: 100 Wins: 67 (67.00%) Losses: 33 (33.00%)
 
 In 100 iterations it has 67% win rate well above the 24% the random bot won. Important to note that this AI is still making 30% moves randomly so we are winning a lot more in reality. We check this in next section.
+
+We train on 100 random games and then play 1000 games on no randomness and we win every game.
+Epoch: 1000 Wins: 1000 (100.00%) Losses: 0 (0.00%)
