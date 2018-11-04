@@ -16,13 +16,26 @@ class Agent:
     def __init__(self):
         self.game = Catch5.Game()
         self.qtable ={}
+        self.randomness_rate =0.3
 
     def ensure_qtable_entry(self, state):
         if state not in self.qtable:
             self.qtable[state] = np.zeros(6)  
 
     def get_action(self, state):
-        return random.randint(0,5)
+        if not self.should_go_random() and state in self.qtable:
+            return self.predict_action(state)
+
+        return self.get_random_action()
+
+    def should_go_random(self):
+        return np.random.rand() <= self.randomness_rate
+
+    def get_random_action(self):
+        return random.randrange(0, 6)
+
+    def predict_action(self, state):
+        return np.argmax(self.qtable[state])
 
     # mapping actions (0..5) to answers (3..-3)
     def action_to_answer(self, action):
@@ -43,8 +56,14 @@ class Agent:
 
         self.qtable[state][action] = q_value
 
+    def print_q_table(self):
+        for key in sorted(self.qtable.keys()):
+            print(key,":" ,self.qtable[key])
+        print()
+
     def print_epoch_stats(self, stats):
         print('Epoch: {stats.epoch} Wins: {stats.nb_wins} ({stats.p_wins:.2f}%) Losses: {stats.nb_losses} ({stats.p_loss:.2f}%)'.format(stats=stats))
+        #self.print_q_table()
 
     def play(self, num_times):
 
