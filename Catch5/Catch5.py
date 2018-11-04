@@ -35,7 +35,7 @@ class Game():
     if (self.turns >=3):
       raise Exception('Max number of turns reached. Call reset.')
 
-    self.turns += 1;
+    self.turns += 1
     self.current_number += int(action)
 
     return self.has_won()
