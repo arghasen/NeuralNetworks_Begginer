@@ -1,5 +1,6 @@
 import random
 import Catch5
+import numpy as np
 
 ActionMap = {0: 3, 1: 2, 2: 1, 3: -1, 4: -2, 5: -3}
 class TrainStats():
@@ -14,6 +15,11 @@ class TrainStats():
 class Agent:
     def __init__(self):
         self.game = Catch5.Game()
+        self.qtable ={}
+
+    def ensure_qtable_entry(self, state):
+        if state not in self.qtable:
+            self.qtable[state] = np.zeros(6)  
 
     def get_action(self, state):
         return random.randint(0,5)
@@ -21,6 +27,21 @@ class Agent:
     # mapping actions (0..5) to answers (3..-3)
     def action_to_answer(self, action):
         return ActionMap[action]
+
+    def train(self, state, action, reward, next_state, final):
+
+        self.ensure_qtable_entry(state)
+        self.ensure_qtable_entry(next_state)
+
+        if final:
+            q_value = reward
+        else:
+            next_state_actions = self.qtable[next_state]
+            next_state_max = np.amax(next_state_actions)
+
+            q_value = reward + 0.6 * next_state_max
+
+        self.qtable[state][action] = q_value
 
     def print_epoch_stats(self, stats):
         print('Epoch: {stats.epoch} Wins: {stats.nb_wins} ({stats.p_wins:.2f}%) Losses: {stats.nb_losses} ({stats.p_loss:.2f}%)'.format(stats=stats))
@@ -74,7 +95,7 @@ class Agent:
                 reward = self.get_reward()
                 next_state = self.game.current_number
                 final = not self.game.is_active()
-                
+                self.train(state, action, reward, next_state, final)
 
                 if (self.game.has_won()):
                     stats.nb_wins += 1
@@ -85,7 +106,7 @@ class Agent:
                 stats.p_wins = 100 / epoch * stats.nb_wins
                 stats.p_loss = 100 / epoch * stats.nb_losses
 
-            if (epoch  == 100):
+            if (epoch  % 10==0):
                 self.print_epoch_stats(stats)
 
 
